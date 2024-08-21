@@ -20,42 +20,9 @@ BOX_LABEL_ANNOTATOR = sv.LabelAnnotator(
 )
 
 
-def run_player_detection(source_video_path: str) -> Iterator[np.ndarray]:
-    """
-    Run player detection on a video and yield annotated frames.
-
-    Args:
-        source_video_path (str): Path to the source video.
-
-    Yields:
-        Iterator[np.ndarray]: Iterator over annotated frames.
-    """
-    # Load the YOLO model with specified weights on a CUDA device
-    player_detection_model = YOLO("models/yolov8n_transfer_road_model.pt").to(device="cuda")
-
-    # Generate frames from the source video
-    frame_generator = sv.get_video_frames_generator(source_path=source_video_path)
-
-    # Iterate over frames
-    for frame in frame_generator:
-        # Perform player detection on the frame
-        result = player_detection_model(frame, imgsz=1280, verbose=False)[0]
-
-        # Convert the detection results to a usable format
-        detections = sv.Detections.from_ultralytics(result)
-
-        # Copy and annotate the frame with detection boxes and labels
-        annotated_frame = frame.copy()
-        annotated_frame = BOX_ANNOTATOR.annotate(annotated_frame, detections)
-        annotated_frame = BOX_LABEL_ANNOTATOR.annotate(annotated_frame, detections)
-
-        # Yield the annotated frame
-        yield annotated_frame
-
-
 def live_predict(model_path, setting, wait_key, video_path=None):
     """
-    Perform live object detection using YOLO model.
+    Perform live object detection using YOLO model and save the output to a video file.
 
     Parameters:
     - model_path (str): Path to the YOLO model weights file.
@@ -73,30 +40,44 @@ def live_predict(model_path, setting, wait_key, video_path=None):
         # If static, ensure video path is provided and generate frames
         if video_path is None:
             raise ValueError("In 'static' setting you must pass video_path")
-        frame_generator = sv.get_video_frames_generator(source_path=video_path)
+        cap = cv2.VideoCapture(video_path)  # Open the video file
     else:
         raise ValueError(f"Invalid setting '{setting}'. Expected 'live' or 'static'.")
 
     # Load the YOLO model from the specified path
     model = YOLO(model_path)
 
-    # Set up frame generation for static video
-    frame_generator = run_player_detection(
-        source_video_path=video_path)
 
-    # Get video information and configure display window size
-    video_info = sv.VideoInfo.from_video_path(video_path)
+    # Set up the VideoWriter to save the output video
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter('res.mp4',fourcc, 20.0, (1200, 900))
 
-    # Initialize video sink and process each frame
-    with sv.VideoSink("result", video_info) as sink:
-        for frame in frame_generator:
-            sink.write_frame(frame)  # Write frame to the output video
-            frame = cv2.resize(frame, (1200, 900))
-            cv2.imshow("frame", frame)  # Display the frame
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break  # Exit if 'q' key is pressed
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break  # Exit loop if no frame is captured
 
-        cv2.destroyAllWindows()  # Close all OpenCV windows
+        # Run YOLO detection on the frame
+        result = model(frame, imgsz=1280, verbose=False)[0]
+        detections = sv.Detections.from_ultralytics(result)
+        annotated_frame = frame.copy()
+        annotated_frame = BOX_ANNOTATOR.annotate(annotated_frame, detections)
+        annotated_frame = BOX_LABEL_ANNOTATOR.annotate(annotated_frame, detections)
+
+        # Resize and display the frame
+        annotated_frame = cv2.resize(annotated_frame, (1200, 900))
+        cv2.imshow("frame", annotated_frame)
+
+        # Write the processed frame to the output video
+        out.write(annotated_frame)
+
+        if cv2.waitKey(wait_key) & 0xFF == ord("q"):
+            break  # Exit if 'q' key is pressed
+
+    # Release video capture and writer objects
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()  # Close all OpenCV windows
 
 
 if __name__ == "__main__":
