@@ -7,6 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+ipykernel = "^6.29.5"
+ultralytics = "^8.2.79"
+torch = "^2.4.0"
+torchinfo = "^1.8.0"
+cvzone = "^1.6.1"
+supervision = "^0.22.0"
 
 
 [build-system]
