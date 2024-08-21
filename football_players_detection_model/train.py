@@ -17,6 +17,7 @@ def train_model(model_path, data_path, save_path, freeze_layers, epochs=100, img
     # Load the YOLO model
     model = YOLO(model_path)
 
+
     freeze = [f"model.{x}." for x in range(freeze_layers)]
 
     for k, v in model.named_parameters():
@@ -50,11 +51,11 @@ def train_model(model_path, data_path, save_path, freeze_layers, epochs=100, img
 
 if __name__ == "__main__":{
     train_model(
-        model_path='models/yolov8n.pt',  # Path to the pre-trained model
+        model_path='models/fine_tuned_road_yolov8s.pt',  # Path to the pre-trained model
         data_path='datasets/data.yaml',  # Path to the data configuration file for training
-        save_path='models/yolov8n_.pt',  # Path to save the trained model
+        save_path='models/yolov8n_transfer_road_model.pt',  # Path to save the trained model
         freeze_layers = 10,
         epochs=100,  # Number of training epochs for training
-        run_dir='runs/fine_tuning_freezed_model'  # Specify the directory for this training run
+        run_dir='runs/fine_tuning_freezed_road_model'  # Specify the directory for this training run
     )
 }
