@@ -49,7 +49,7 @@ def train_model(model_path, data_path, save_path, freeze_layers, epochs=100, img
     # Print training results
     print(results)
 
-if __name__ == "__main__":{
+if __name__ == "__main__":
     train_model(
         model_path='models/fine_tuned_road_yolov8s.pt',  # Path to the pre-trained model
         data_path='datasets/data.yaml',  # Path to the data configuration file for training
@@ -58,4 +58,3 @@ if __name__ == "__main__":{
         epochs=100,  # Number of training epochs for training
         run_dir='runs/fine_tuning_freezed_road_model'  # Specify the directory for this training run
     )
-}
